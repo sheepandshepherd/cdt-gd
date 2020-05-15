@@ -15,7 +15,9 @@ func _draw():
 			var from = verts[tris[3*tri + i]]
 			var to = verts[tris[3*tri + (i+1)%3]]
 			draw_line(from, to, Color(1,0,0), 1.0, true )
-	for vert in verts:
+	for v in verts.size():
+		var vert = verts[v]
+		print("Triangles of vert ", v, ": ", cdt.get_vertex_triangles(v))
 		draw_circle(vert, 2.5, Color(0,1,0))
 
 func _ready():

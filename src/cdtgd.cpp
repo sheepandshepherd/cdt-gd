@@ -163,11 +163,11 @@ Vector2 ConstrainedTriangulation::get_vertex(int vertex_index)
 PoolIntArray ConstrainedTriangulation::get_vertex_triangles(int vertex_index)
 {
 	PoolIntArray ret;
-	PoolIntArray::Write write = ret.write();
 
 	CDT::TriIndVec tris = triangulation.vertices[vertex_index].triangles;
 
 	ret.resize(tris.size());
+	PoolIntArray::Write write = ret.write();
 	for(int i = 0; i < tris.size(); ++i) write[i] = tris[i];
 	return ret;
 }
