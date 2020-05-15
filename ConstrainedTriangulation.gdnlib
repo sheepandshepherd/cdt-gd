@@ -1,0 +1,16 @@
+[general]
+
+singleton=false
+load_once=true
+symbol_prefix="cdt_gd_"
+reloadable=true
+
+[entry]
+
+Windows="res://bin/win64/libcdt-gd.dll"
+X11="res://bin/x11/libcdt-gd.so"
+
+[dependencies]
+
+Windows=[  ]
+X11=[  ]
