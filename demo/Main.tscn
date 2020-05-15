@@ -18,3 +18,9 @@ polygon = PoolVector2Array( 642.803, 82.6656, 671.371, 44.5752, 747.552, 84.026,
 [node name="Polygon2D2" type="Polygon2D" parent="Polygon2D"]
 color = Color( 0, 0, 0, 1 )
 polygon = PoolVector2Array( 433.306, 341.137, 431.945, 459.489, 563.902, 460.85, 561.181, 384.669, 514.928, 386.029, 514.928, 339.776 )
+
+[node name="HoveredTriangle" type="Polygon2D" parent="."]
+visible = false
+z_index = -1
+z_as_relative = false
+color = Color( 0, 1, 0, 1 )

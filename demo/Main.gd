@@ -1,6 +1,8 @@
 extends Node2D
 
 onready var poly = $Polygon2D
+var hovered_tri_index = -1
+onready var hovered_tri = $HoveredTriangle
 var holes = []
 var cdt = ConstrainedTriangulation.new()
 
@@ -48,8 +50,20 @@ func _ready():
 	cdt.erase_outer_triangles_and_holes()
 	
 	
-	verts = (cdt.get_vertices())
-	tris = (cdt.get_indices())
+	verts = (cdt.get_all_vertices())
+	tris = (cdt.get_all_triangles())
 	print("verts: ", verts)
 	print("tris: ", tris)
 
+func _input(event):
+	if event is InputEventMouseMotion:
+		var tri = cdt.get_triangle_at_point(event.position)
+		if tri != hovered_tri_index:
+			hovered_tri_index = tri
+			hovered_tri.visible = tri != -1
+			if tri != -1:
+				var indices = cdt.get_triangle(tri)
+				var a = cdt.get_vertex(indices.x)
+				var b = cdt.get_vertex(indices.y)
+				var c = cdt.get_vertex(indices.z)
+				hovered_tri.polygon = [a,b,c]

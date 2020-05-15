@@ -9,19 +9,32 @@ using Edge = CDT::Edge;
 
 using namespace godot;
 
+#define BIND_METHOD(Name) register_method(#Name, &ConstrainedTriangulation::Name);
+
 void ConstrainedTriangulation::_register_methods()
 {
-	register_method("insert_vertices", &ConstrainedTriangulation::insert_vertices);
-	register_method("insert_edges", &ConstrainedTriangulation::insert_edges);
+	BIND_METHOD(insert_vertices)
+	BIND_METHOD(insert_edges)
 
-	register_method("insert_polygon", &ConstrainedTriangulation::insert_polygon);
+	BIND_METHOD(insert_polygon)
 
-	register_method("erase_super_triangle", &ConstrainedTriangulation::erase_super_triangle);
-	register_method("erase_outer_triangles", &ConstrainedTriangulation::erase_outer_triangles);
-	register_method("erase_outer_triangles_and_holes", &ConstrainedTriangulation::erase_outer_triangles_and_holes);
+	BIND_METHOD(erase_super_triangle)
+	BIND_METHOD(erase_outer_triangles)
+	BIND_METHOD(erase_outer_triangles_and_holes)
 
-	register_method("get_vertices", &ConstrainedTriangulation::get_vertices);
-	register_method("get_indices", &ConstrainedTriangulation::get_indices);
+	BIND_METHOD(get_triangle_at_point)
+
+	BIND_METHOD(get_vertex_count)
+	BIND_METHOD(get_vertex)
+	BIND_METHOD(get_vertex_triangles)
+	BIND_METHOD(get_all_vertices)
+
+	BIND_METHOD(get_triangle_count)
+
+	BIND_METHOD(get_triangle)
+	BIND_METHOD(get_triangle_neighbors)
+	BIND_METHOD(get_all_triangles)
+	BIND_METHOD(get_all_triangle_neighbors)
 }
 
 void ConstrainedTriangulation::_init()
@@ -122,12 +135,64 @@ void ConstrainedTriangulation::erase_outer_triangles_and_holes()
 	triangulation.eraseOuterTrianglesAndHoles();
 }
 
-PoolVector2Array ConstrainedTriangulation::get_vertices()
+int ConstrainedTriangulation::get_triangle_at_point(Vector2 point)
+{
+	Point p = g2s(point);
+	for(int t = 0; t < triangulation.triangles.size(); ++t)
+	{
+		CDT::VerticesArr3 verts = triangulation.triangles[t].vertices;
+		Point a = triangulation.vertices[verts[0]].pos;
+		Point b = triangulation.vertices[verts[1]].pos;
+		Point c = triangulation.vertices[verts[2]].pos;
+		if(CDT::locatePointTriangle<float>(p, a, b, c) != CDT::PtTriLocation::Outside)
+		{
+			return t;
+		}
+	}
+	return -1;
+}
+
+int ConstrainedTriangulation::get_vertex_count()
+{
+	return triangulation.vertices.size();
+}
+Vector2 ConstrainedTriangulation::get_vertex(int vertex_index)
+{
+	return s2g(triangulation.vertices[vertex_index].pos);
+}
+PoolIntArray ConstrainedTriangulation::get_vertex_triangles(int vertex_index)
+{
+	PoolIntArray ret;
+	PoolIntArray::Write write = ret.write();
+
+	CDT::TriIndVec tris = triangulation.vertices[vertex_index].triangles;
+
+	ret.resize(tris.size());
+	for(int i = 0; i < tris.size(); ++i) write[i] = tris[i];
+	return ret;
+}
+PoolVector2Array ConstrainedTriangulation::get_all_vertices()
 {
 	PoolVector2Array ret = s2g<Vertex, PoolVector2Array>(triangulation.vertices);
 	return ret;
 }
-PoolIntArray ConstrainedTriangulation::get_indices()
+
+int ConstrainedTriangulation::get_triangle_count()
+{
+	return triangulation.triangles.size();
+}
+// TODO: change to Vector3i in 4.0
+Vector3 ConstrainedTriangulation::get_triangle(int triangle_index)
+{
+	CDT::VerticesArr3 verts = triangulation.triangles[triangle_index].vertices;
+	return Vector3(verts[0], verts[1], verts[2]);
+}
+Vector3 ConstrainedTriangulation::get_triangle_neighbors(int triangle_index)
+{
+	CDT::NeighborsArr3 neighbors = triangulation.triangles[triangle_index].neighbors;
+	return Vector3(neighbors[0], neighbors[1], neighbors[2]);
+}
+PoolIntArray ConstrainedTriangulation::get_all_triangles()
 {
 	PoolIntArray ret;
 	int tris = triangulation.triangles.size();
@@ -138,6 +203,20 @@ PoolIntArray ConstrainedTriangulation::get_indices()
 		write[3*i] = triangulation.triangles[i].vertices[0];
 		write[3*i+1] = triangulation.triangles[i].vertices[1];
 		write[3*i+2] = triangulation.triangles[i].vertices[2];
+	}
+	return ret;
+}
+PoolIntArray ConstrainedTriangulation::get_all_triangle_neighbors()
+{
+	PoolIntArray ret;
+	int tris = triangulation.triangles.size();
+	ret.resize(tris*3);
+	PoolIntArray::Write write = ret.write();
+	for(int i = 0; i < tris; ++i)
+	{
+		write[3*i] = triangulation.triangles[i].neighbors[0];
+		write[3*i+1] = triangulation.triangles[i].neighbors[1];
+		write[3*i+2] = triangulation.triangles[i].neighbors[2];
 	}
 	return ret;
 }
