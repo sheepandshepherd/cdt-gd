@@ -1,5 +1,5 @@
 #!python
-import os, subprocess
+import os, subprocess, sys
 
 # Workaround for MinGW. See:
 # http://www.scons.org/wiki/LongCmdLinesOnWin32
@@ -42,9 +42,23 @@ opts = Variables([], ARGUMENTS)
 # Gets the standard flags CC, CCX, etc.
 env = DefaultEnvironment()
 
+# Try to detect the host platform automatically.
+# This is used if no `platform` argument is passed
+if sys.platform.startswith('linux'):
+    host_platform = 'linux'
+elif sys.platform == 'darwin':
+    host_platform = 'osx'
+elif sys.platform == 'win32' or sys.platform == 'msys':
+    host_platform = 'windows'
+else:
+    raise ValueError(
+        'Could not detect platform automatically, please specify with '
+        'platform=<platform>'
+    )
+
 # Define our options
 opts.Add(EnumVariable('target', "Compilation target", 'debug', ['d', 'debug', 'r', 'release']))
-opts.Add(EnumVariable('platform', "Compilation platform", '', ['', 'windows', 'x11', 'linux', 'osx']))
+opts.Add(EnumVariable('platform', "Compilation platform", host_platform, ['', 'windows', 'x11', 'linux', 'osx']))
 opts.Add(EnumVariable('p', "Compilation target, alias for 'platform'", '', ['', 'windows', 'x11', 'linux', 'osx']))
 opts.Add(BoolVariable('use_llvm', "Use the LLVM / Clang compiler", 'no'))
 opts.Add(PathVariable('target_path', 'The path where the lib is installed.', 'bin/'))
@@ -101,7 +115,7 @@ elif env['platform'] in ('x11', 'linux'):
 elif env['platform'] == "windows":
     env['target_path'] += 'win64/'
     cpp_library += '.windows'
-    if not env['use_mingw']:
+    if host_platform == 'windows' and not env['use_mingw']:
         # This makes sure to keep the session environment variables on windows,
         # that way you can run scons in a vs 2017 prompt and it will find all the required tools
         env.Append(ENV = os.environ)
@@ -111,13 +125,21 @@ elif env['platform'] == "windows":
             env.Append(CCFLAGS = ['-EHsc', '-D_DEBUG', '-MDd'])
         else:
             env.Append(CCFLAGS = ['-O2', '-EHsc', '-DNDEBUG', '-MD'])
-    else:
+    elif host_platform == 'linux' or host_platform == 'osx':
+        env['CXX'] = 'x86_64-w64-mingw32-g++'
+        env['AR'] = "x86_64-w64-mingw32-ar"
+        env['RANLIB'] = "x86_64-w64-mingw32-ranlib"
+        env['LINK'] = "x86_64-w64-mingw32-g++"
+    elif host_platform == 'windows' and env['use_mingw']:
         env = env.Clone(tools=['mingw'])
         env["SPAWN"] = mySpawn
+
+    if host_platform == 'linux' or host_platform == 'osx' or env['use_mingw']:
         if env['target'] in ('debug', 'd'):
             env.Append(CCFLAGS = ['-fPIC', '-g3','-Og', '-std=c++17'])
         else:
             env.Append(CCFLAGS = ['-fPIC', '-g0','-s','-O3', '-std=c++17'])
+
         env.Append(LINKFLAGS=[
             '--static',
             '-Wl,--no-undefined',
